@@ -1,0 +1,12 @@
+
+.python-version
+.venv
+uv.lock
+pyproject.toml
+Dockerfile
+.gitignore
+README.md
+.mypy_cache
+.ruff_cache
+.git
+docker-compose.yaml

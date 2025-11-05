@@ -1,0 +1,10 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./statics/storage:/site/statics/storage"
+    image: my-website:0.1.0
+
