@@ -77,25 +77,25 @@ class HttpHandler(BaseHTTPRequestHandler):
         template = env.get_template(filename)
         return template.render(messages=messages)
     
-    def __send_mime_type_header(self):
-        mt = mimetypes.guess_type(self.path)
-        if mt:
-            self.send_header("Content-type", mt[0])
-            # print(f"MIME type: {mt}")
-        else:
-            self.send_header("Content-type", "text/plain")
+    # def __send_mime_type_header(self):
+    #     mt = mimetypes.guess_type(self.path)
+    #     if mt:
+    #         self.send_header("Content-type", mt[0])
+    #         # print(f"MIME type: {mt}")
+    #     else:
+    #         self.send_header("Content-type", "text/plain")
 
     def send_html_file(self, filename, status=200):
         self.send_response(status)
         # self.__send_mime_type_header()
-        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.send_header("Content-type", "text/html")
         self.end_headers()
         try:
             with open(filename, "rb") as fd:
                 self.wfile.write(fd.read())
         except FileNotFoundError:
             self.send_response(404)
-            self.__send_mime_type_header()
+            self.send_header("Content-type", "text/html")
             self.end_headers()
             with open("error.html", "rb") as error_file:
                 self.wfile.write(error_file.read())
@@ -112,6 +112,8 @@ class HttpHandler(BaseHTTPRequestHandler):
         self.end_headers()
         with open(f".{self.path}", "rb") as file:
             self.wfile.write(file.read())
+            print(f"Відправлено файл: .{self.path}")
+            print(f"MIME type: {mt}")
 
 
 def run(server_class=HTTPServer, handler_class=HttpHandler):
