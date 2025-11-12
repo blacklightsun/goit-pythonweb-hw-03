@@ -29,10 +29,10 @@
                 <a class="nav-link active" aria-current="page" href="/">Home</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="/message.html">Send message</a>
+                <a class="nav-link" href="/message">Send message</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="/read.html">Read messages</a>
+                <a class="nav-link" href="/read">Read messages</a>
               </li>
             </ul>
           </div>
@@ -44,49 +44,11 @@
             <div class="chat-box" id="chat-box">
         <i>Завантаження повідомлень...</i>
     </div>
-    <script>
-        // Ця функція виконається, коли сторінка завантажиться
-        async function loadMessages() {
-            const chatBox = document.getElementById('chat-box');
-            
-            try {
-                // 3. Браузер робить GET-запит до вашого сервера по файл storage/data.json
-                //    (Ваш MyHandler автоматично обробить це завдяки успадкуванню)
-                const response = await fetch('storage/data.json');
-                
-                // 4. Перетворюємо текст JSON у JavaScript-об'єкт
-                const messages = await response.json();
-
-                // Очищуємо чат
-                chatBox.innerHTML = '';
-
-                // 5. Це JavaScript-аналог вашого циклу {% for ... %}
-                //    Object.entries(messages) перетворює { "час": {дані} } у масив [ ["час", {дані}] ]
-                for (const [timestamp, data] of Object.entries(messages)) {
-                    
-                    // 6. Динамічно створюємо HTML для кожного повідомлення
-                    const msgElement = document.createElement('div');
-                    msgElement.classList.add('message');
-                    
-                    // Використовуємо `textContent` для безпечної вставки (захист від XSS)
-                    // Або `innerHTML`, якщо ви довіряєте даним
-                    msgElement.innerHTML = `[${timestamp}] <strong>${data.username}</strong>: ${data.message}`;
-                    
-                    chatBox.appendChild(msgElement);
-                }
-                // Якщо повідомлень не було
-                if (Object.keys(messages).length === 0) {
-                     chatBox.innerHTML = '<i>Повідомлень ще немає...</i>';
-                }
-
-            } catch (error) {
-                console.error('Не вдалося завантажити повідомлення:', error);
-                chatBox.innerHTML = 'Помилка завантаження повідомлень.';
-            }
-        }
-        // 7. Запускаємо функцію, коли DOM-структура сторінки готова
-        document.addEventListener('DOMContentLoaded', loadMessages);
-    </script>
+    <ul>
+      {%- for timestamp, data in messages.items() %}
+        <li>[{{ timestamp }}] {{ data['username'] }}: {{ data['message'] }}</li>
+      {%- endfor %}
+    </ul>
     </div>
   </body>
 </html>

@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
+from jinja2 import Template, Environment, FileSystemLoader
 
 
 # 1. Отримуємо шлях до поточної папки скрипта
@@ -40,25 +41,69 @@ class HttpHandler(BaseHTTPRequestHandler):
         pr_url = urllib.parse.urlparse(self.path)
         if pr_url.path == "/":
             self.send_html_file("index.html")
+
         elif pr_url.path == "/message":
             self.send_html_file("message.html")
+
         elif pr_url.path == "/read":
-            self.send_html_file("read.html")
+            output = self.__render_template("read.html", STORAGE_DIR / "data.json")
+            with open("temp.html", "w", encoding="utf-8") as f:
+                f.write(output)
+            self.send_html_file("temp.html")
+            # Видалення файлу
+            try:
+                os.remove('temp.html')
+                print(f"Файл 'temp.html' успішно видалено.")
+            except OSError as e:
+                print(f"Помилка при видаленні файлу 'temp.html': {e}")
+
         else:
             if pathlib.Path().joinpath(pr_url.path[1:]).exists():
                 self.send_static()
             else:
                 self.send_html_file("error.html", 404)
 
+    def __render_template(self, filename, context):
+        try:
+            with open(context, "r", encoding="utf-8") as message_file:
+                messages = json.load(message_file)
+        except FileNotFoundError:
+            messages = {}
+            print(f"Помилка: Файл не знайдено: {context}")
+            print("Повертаємо порожній словник повідомлень.")
+            print(messages)
+
+        env = Environment(loader=FileSystemLoader(PUBLIC_DIR))
+        template = env.get_template(filename)
+        return template.render(messages=messages)
+    
+    def __send_mime_type_header(self):
+        mt = mimetypes.guess_type(self.path)
+        if mt:
+            self.send_header("Content-type", mt[0])
+            # print(f"MIME type: {mt}")
+        else:
+            self.send_header("Content-type", "text/plain")
+
     def send_html_file(self, filename, status=200):
         self.send_response(status)
-        self.send_header("Content-type", "text/html")
+        # self.__send_mime_type_header()
+        self.send_header("Content-type", "text/html; charset=utf-8")
         self.end_headers()
-        with open(filename, "rb") as fd:
-            self.wfile.write(fd.read())
+        try:
+            with open(filename, "rb") as fd:
+                self.wfile.write(fd.read())
+        except FileNotFoundError:
+            self.send_response(404)
+            self.__send_mime_type_header()
+            self.end_headers()
+            with open("error.html", "rb") as error_file:
+                self.wfile.write(error_file.read())
 
     def send_static(self):
         self.send_response(200)
+        self.end_headers()
+        # self.__send_mime_type_header()
         mt = mimetypes.guess_type(self.path)
         if mt:
             self.send_header("Content-type", mt[0])
