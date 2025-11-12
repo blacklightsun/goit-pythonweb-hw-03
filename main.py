@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 
 
 # 1. Отримуємо шлях до поточної папки скрипта
@@ -43,7 +43,7 @@ class HttpHandler(BaseHTTPRequestHandler):
             os.makedirs(STORAGE_DIR, exist_ok=True)
         except OSError as e:
             print(f"Помилка при створенні директорії {STORAGE_DIR}: {e}")
-        
+
         try:
             with open(MESSAGES_FILE, "w", encoding="utf-8") as file:
                 json.dump(json_data, file, ensure_ascii=False, indent=2)
@@ -68,8 +68,8 @@ class HttpHandler(BaseHTTPRequestHandler):
             self.send_html_file("temp.html")
             # Видалення файлу
             try:
-                os.remove('temp.html')
-                print(f"Файл 'temp.html' успішно видалено.")
+                os.remove("temp.html")
+                print("Файл 'temp.html' успішно видалено.")
             except OSError as e:
                 print(f"Помилка при видаленні файлу 'temp.html': {e}")
         else:
