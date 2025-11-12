@@ -9,8 +9,21 @@ WORKDIR $SITE_HOME
 # Define a volume for persistent data
 VOLUME ["$SITE_HOME/statics/storage"]
 
-# Скопіюємо інші файли в робочу директорію контейнера
+# ---- Оптимізація та Встановлення Залежностей ----
+
+# 1. Скопіюємо ТІЛЬКИ файл із залежностями
+# Це дозволить Docker кешувати шар зі встановленими бібліотеками
+COPY requirements.txt .
+
+# 2. Встановимо залежності
+# --no-cache-dir гарантує, що кеш pip не буде збережено,
+# що критично для зменшення розміру образу
+RUN pip install -r requirements.txt --no-cache-dir
+
+# 3. Тепер скопіюємо решту файлів проєкту в робочу директорію
 COPY . .
+
+# ---- Кінець змін ----
 
 # дозволимо всім користувачам читати і писати файл data.json
 RUN chmod 666 statics/storage/data.json
