@@ -5,12 +5,14 @@ import os
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
+from jinja2 import Template, Environment, FileSystemLoader
 
 
 # 1. Отримуємо шлях до поточної папки скрипта
 APP_DIR = pathlib.Path(__file__).resolve().parent
 PUBLIC_DIR = APP_DIR / "statics"
 STORAGE_DIR = PUBLIC_DIR / "storage"
+MESSAGES_FILE = STORAGE_DIR / "data.json"
 
 
 class HttpHandler(BaseHTTPRequestHandler):
@@ -28,13 +30,29 @@ class HttpHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        with open(STORAGE_DIR / "data.json", "r", encoding="utf-8") as file:
-            json_data = json.load(file)
+        try:
+            with open(MESSAGES_FILE, "r", encoding="utf-8") as file:
+                json_data = json.load(file)
+        except FileNotFoundError as err:
+            print(f"Помилка: Файл {MESSAGES_FILE} не знайдено: {err}")
+            json_data = {}
 
         json_data[timestamp] = data_dict
 
-        with open(STORAGE_DIR / "data.json", "w", encoding="utf-8") as file:
-            json.dump(json_data, file, ensure_ascii=False, indent=2)
+        try:
+            os.makedirs(STORAGE_DIR, exist_ok=True)
+        except OSError as e:
+            print(f"Помилка при створенні директорії {STORAGE_DIR}: {e}")
+        
+        try:
+            with open(MESSAGES_FILE, "w", encoding="utf-8") as file:
+                json.dump(json_data, file, ensure_ascii=False, indent=2)
+        except json.JSONDecodeError as e:
+            print(f"Помилка декодування JSON з файлу {MESSAGES_FILE}: {e}")
+            print("Ініціалізуємо файл порожнім словником.")
+            json_data = {}
+        except OSError as e:
+            print(f"Помилка при записі у файл {MESSAGES_FILE}: {e}")
 
     def do_GET(self):
         pr_url = urllib.parse.urlparse(self.path)
@@ -43,12 +61,36 @@ class HttpHandler(BaseHTTPRequestHandler):
         elif pr_url.path == "/message":
             self.send_html_file("message.html")
         elif pr_url.path == "/read":
-            self.send_html_file("read.html")
+            # self.send_html_file("read.html")
+            output = self.__render_template("read.html", STORAGE_DIR / "data.json")
+            with open("temp.html", "w", encoding="utf-8") as f:
+                f.write(output)
+            self.send_html_file("temp.html")
+            # Видалення файлу
+            try:
+                os.remove('temp.html')
+                print(f"Файл 'temp.html' успішно видалено.")
+            except OSError as e:
+                print(f"Помилка при видаленні файлу 'temp.html': {e}")
         else:
             if pathlib.Path().joinpath(pr_url.path[1:]).exists():
                 self.send_static()
             else:
                 self.send_html_file("error.html", 404)
+
+    def __render_template(self, filename, context):
+        try:
+            with open(context, "r", encoding="utf-8") as message_file:
+                messages = json.load(message_file)
+        except FileNotFoundError:
+            messages = {}
+            print(f"Помилка: Файл не знайдено: {context}")
+            print("Повертаємо порожній словник повідомлень.")
+            print(messages)
+
+        env = Environment(loader=FileSystemLoader(PUBLIC_DIR))
+        template = env.get_template(filename)
+        return template.render(messages=messages)
 
     def send_html_file(self, filename, status=200):
         self.send_response(status)
