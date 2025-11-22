@@ -61,17 +61,11 @@ class HttpHandler(BaseHTTPRequestHandler):
         elif pr_url.path == "/message":
             self.send_html_file("message.html")
         elif pr_url.path == "/read":
-            # self.send_html_file("read.html")
-            output = self.__render_template("read.html", STORAGE_DIR / "data.json")
-            with open("temp.html", "w", encoding="utf-8") as f:
-                f.write(output)
-            self.send_html_file("temp.html")
-            # Видалення файлу
-            try:
-                os.remove("temp.html")
-                print("Файл 'temp.html' успішно видалено.")
-            except OSError as e:
-                print(f"Помилка при видаленні файлу 'temp.html': {e}")
+            output = self.__render_template("read.html", STORAGE_DIR / "data.json").encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(output)
         else:
             if pathlib.Path().joinpath(pr_url.path[1:]).exists():
                 self.send_static()
@@ -101,9 +95,9 @@ class HttpHandler(BaseHTTPRequestHandler):
 
     def send_static(self):
         self.send_response(200)
-        mt = mimetypes.guess_type(self.path)
-        if mt:
-            self.send_header("Content-type", mt[0])
+        mt, _ = mimetypes.guess_type(self.path)
+        if mt is not None:
+            self.send_header("Content-type", mt)
         else:
             self.send_header("Content-type", "text/plain")
         self.end_headers()
