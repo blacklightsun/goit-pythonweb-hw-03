@@ -61,7 +61,9 @@ class HttpHandler(BaseHTTPRequestHandler):
         elif pr_url.path == "/message":
             self.send_html_file("message.html")
         elif pr_url.path == "/read":
-            output = self.__render_template("read.html", STORAGE_DIR / "data.json").encode("utf-8")
+            output = self.__render_template(
+                "read.html", STORAGE_DIR / "data.json"
+            ).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
